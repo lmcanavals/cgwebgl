@@ -57,10 +57,18 @@ function main() {
 	const program = createProgram(gl);
   const posLoc = gl.getAttribLocation(program, "a_position");
 
+
 	const vertices = new Float32Array([
 		-0.5, -0.5,
 	  0.2, 0.8,
 	  0.6, -0.35]);
+/*	const vertices = new Float32Array([
+		-0.5, -0.5,
+	  0.2, 0.8,
+	  0.2, 0.8,
+	  0.6, -0.35,
+	  0.6, -0.35,
+		-0.5, -0.5]);*/
 
 	const vbo = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
@@ -78,6 +86,7 @@ function main() {
 	gl.useProgram(program);
 	gl.bindVertexArray(vao);
 	gl.drawArrays(gl.TRIANGLES, 0, 3);
+	//gl.drawArrays(gl.LINES, 0, 6);
 }
 
 main();
