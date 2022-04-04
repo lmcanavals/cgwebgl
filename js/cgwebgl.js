@@ -47,8 +47,34 @@
       this.gl.bindVertexArray(null);
     }
   }
-
-	return {
-			Mesh
+	class MeshHelper {
+		constructor(numVertices, numComps, numIndices) {
+			this.numComps = numComps;
+			this.vertices = new Float32Array(numVertices * numComps);
+			this.indices = new Uint32Array(numIndices);
+			this.iv = 0;
+			this.ii = 0;
+		}
+		addVertex(comps) {
+			for (let i = 0; i < comps.length; i++) {
+				this.vertices[this.iv * this.numComps + i] = comps[i];
+			}
+			this.iv++;
+		}
+		addTriangle(a, b, c) {
+			this.indices[this.ii * 3 + 0] = a;
+			this.indices[this.ii * 3 + 1] = b;
+			this.indices[this.ii * 3 + 2] = c;
+			this.ii++;
+		}
+		addRect(a, b, c, d) {
+			this.addTriangle(a, b, c);
+			this.addTriangle(a, c, d);
+		}
 	}
+
+  return {
+    Mesh,
+		MeshHelper,
+  };
 });
