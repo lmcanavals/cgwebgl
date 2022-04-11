@@ -41,19 +41,17 @@ async function main() {
   const vertSrc = await fetch("glsl/04-02.vert").then((resp) => resp.text());
   const fragSrc = await fetch("glsl/03-01.frag").then((resp) => resp.text());
   const shader = wu.createProgramFromSources(gl, [vertSrc, fragSrc]);
+
+  const cam = new cg.Cam([0, 0, 4]);
   const mesh = createRectangle(gl, shader);
   const model = mat4.create();
-  const view = mat4.create();
   const projection = mat4.create();
-
-  const viewMatrix = new Float32Array([1, 1, -6]);
 
   const modelLoc = gl.getUniformLocation(shader, "u_model");
   const viewLoc = gl.getUniformLocation(shader, "u_view");
   const projectionLoc = gl.getUniformLocation(shader, "u_projection");
 
   let aspect = 1;
-  let fov = 0.5;
 
   let deltaTime = 0;
   let lastTime = 0;
@@ -73,21 +71,32 @@ async function main() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     mat4.identity(model);
-    mat4.identity(view);
     mat4.identity(projection);
 
-    mat4.translate(view, view, viewMatrix);
-    mat4.perspective(projection, fov, aspect, 0.1, 100.0);
+    mat4.perspective(projection, cam.zoom, aspect, 0.1, 100.0);
 
     gl.useProgram(shader);
     gl.uniformMatrix4fv(modelLoc, false, model);
-    gl.uniformMatrix4fv(viewLoc, false, view);
+    gl.uniformMatrix4fv(viewLoc, false, cam.viewM4);
     gl.uniformMatrix4fv(projectionLoc, false, projection);
     mesh.draw(shader);
 
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
+
+  document.addEventListener("keydown", (e) => {
+    /**/ if (e.key == "w") cam.processKeyboard(cg.FORWARD, deltaTime);
+    else if (e.key == "s") cam.processKeyboard(cg.BACKWARD, deltaTime);
+    else if (e.key == "a") cam.processKeyboard(cg.LEFT, deltaTime);
+    else if (e.key == "d") cam.processKeyboard(cg.RIGHT, deltaTime);
+    //else if (e.key == "q") cam.processKeyboard(cg.DOWN, deltaTime);
+    //else if (e.key == "e") cam.processKeyboard(cg.UP, deltaTime);
+  });
+  document.addEventListener("mousemove", (e) => cam.movePov(e.x, e.y));
+  document.addEventListener("mousedown", (e) => cam.startMove(e.x, e.y));
+  document.addEventListener("mouseup", () => cam.stopMove());
+  document.addEventListener("wheel", (e) => cam.processScroll(e.deltaY));
 }
 
 main();
