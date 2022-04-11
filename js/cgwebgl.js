@@ -7,6 +7,17 @@
 })(this, function () {
   "use strict";
 
+  const { vec3, mat4 } = glMatrix;
+
+  const FORWARD = 0;
+  const LEFT = 1;
+  const BACKWARD = 2;
+  const RIGHT = 3;
+
+  const MINZOOM = Math.PI / 180.0;
+  const MAXZOOM = Math.PI / 4.0;
+  const MAXPITCH = Math.PI / 2.02;
+
   class Mesh {
     constructor(gl, shader, params) {
       this.gl = gl;
@@ -47,34 +58,127 @@
       this.gl.bindVertexArray(null);
     }
   }
-	class MeshHelper {
-		constructor(numVertices, numComps, numIndices) {
-			this.numComps = numComps;
-			this.vertices = new Float32Array(numVertices * numComps);
-			this.indices = new Uint32Array(numIndices);
-			this.iv = 0;
-			this.ii = 0;
-		}
-		addVertex(comps) {
-			for (let i = 0; i < comps.length; i++) {
-				this.vertices[this.iv * this.numComps + i] = comps[i];
-			}
-			this.iv++;
-		}
-		addTriangle(a, b, c) {
-			this.indices[this.ii * 3 + 0] = a;
-			this.indices[this.ii * 3 + 1] = b;
-			this.indices[this.ii * 3 + 2] = c;
-			this.ii++;
-		}
-		addRect(a, b, c, d) {
-			this.addTriangle(a, b, c);
-			this.addTriangle(a, c, d);
-		}
-	}
+  class MeshHelper {
+    constructor(numVertices, numComps, numIndices) {
+      this.numComps = numComps;
+      this.vertices = new Float32Array(numVertices * numComps);
+      this.indices = new Uint32Array(numIndices);
+      this.iv = 0;
+      this.ii = 0;
+    }
+    addVertex(comps) {
+      for (let i = 0; i < comps.length; i++) {
+        this.vertices[this.iv * this.numComps + i] = comps[i];
+      }
+      this.iv++;
+    }
+    addTriangle(a, b, c) {
+      this.indices[this.ii * 3 + 0] = a;
+      this.indices[this.ii * 3 + 1] = b;
+      this.indices[this.ii * 3 + 2] = c;
+      this.ii++;
+    }
+    addRect(a, b, c, d) {
+      this.addTriangle(a, b, c);
+      this.addTriangle(a, c, d);
+    }
+  }
+
+  class Cam {
+    constructor(pos) {
+      this.pos = vec3.clone(pos);
+      this.up = vec3.clone([0, 1, 0]);
+      this.lookAt = vec3.create();
+      this.right = vec3.create();
+      this.worldUp = vec3.clone([0, 1, 0]);
+
+      this.yaw = -Math.PI / 2.0;
+      this.pitch = 0.0;
+      this.zoom = Math.PI / 4.0;
+
+      this.mouseSensitivity = 0.001;
+      this.zoomSensitivity = 0.0005;
+
+      this.speed = 2.5;
+
+      this.mouseMove = false;
+      this.firstMouse = true;
+      this.lastX = 0;
+      this.lastY = 0;
+
+      this.viewM4 = mat4.create();
+
+      this.sign = [1, -1, -1, 1];
+      this.vec = [this.lookAt, this.right, this.lookAt, this.right];
+      this.temp = vec3.create();
+
+      this.updateVectors();
+    }
+    startMove(xpos, ypos) {
+      this.lastX = xpos;
+      this.lastY = ypos;
+      this.mouseMove = true;
+    }
+    stopMove() {
+      this.mouseMove = false;
+    }
+    movePov(xpos, ypos) {
+      if (this.mouseMove) {
+        this.processPov(xpos - this.lastX, ypos - this.lastY);
+        this.lastX = xpos;
+        this.lastY = ypos;
+      }
+    }
+    stopPov() {
+      this.firstMove = true;
+    }
+    processKeyboard(direction, deltaTime) {
+      const velocity = this.sign[direction] * this.speed * deltaTime;
+      this.pos[0] += this.vec[direction][0] * velocity;
+      this.pos[1] += this.vec[direction][1] * velocity;
+      this.pos[2] += this.vec[direction][2] * velocity;
+      this.updateVectors();
+    }
+    processScroll(yoffset) {
+      this.zoom -= yoffset * this.zoomSensitivity;
+      if (this.zoom < MINZOOM) {
+        this.zoom = MINZOOM;
+      } else if (this.zoom > MAXZOOM) {
+        this.zoom = MAXZOOM;
+      }
+    }
+    processPov(xoffset, yoffset, constrainPitch) {
+      constrainPitch = constrainPitch === undefined ? true : constrainPitch;
+      this.yaw += xoffset * this.mouseSensitivity;
+      this.pitch += yoffset * this.mouseSensitivity;
+      if (constrainPitch) {
+        if (this.pitch > MAXPITCH) this.pitch = MAXPITCH;
+        else if (this.pitch < -MAXPITCH) this.pitch = -MAXPITCH;
+      }
+      this.updateVectors();
+    }
+    updateVectors() {
+      this.lookAt[0] = Math.cos(this.yaw) * Math.cos(this.pitch);
+      this.lookAt[1] = Math.sin(this.pitch);
+      this.lookAt[2] = Math.sin(this.yaw) * Math.cos(this.pitch);
+      vec3.normalize(this.lookAt, this.lookAt);
+      vec3.cross(this.right, this.lookAt, this.worldUp);
+      vec3.normalize(this.right, this.right);
+      vec3.cross(this.up, this.right, this.lookAt);
+      vec3.normalize(this.up, this.up);
+
+      vec3.add(this.temp, this.pos, this.lookAt);
+      mat4.lookAt(this.viewM4, this.pos, this.temp, this.up);
+    }
+  }
 
   return {
     Mesh,
-		MeshHelper,
+    MeshHelper,
+    Cam,
+    FORWARD: FORWARD,
+    LEFT: LEFT,
+    RIGHT: RIGHT,
+    BACKWARD: BACKWARD,
   };
 });
