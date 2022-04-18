@@ -4,19 +4,19 @@ const wu = webglUtils;
 const mat4 = glMatrix.mat4;
 
 function createRectangle(gl, shader) {
-  const v = new cg.MeshHelper(8, 6, 36);
+  const v = new cg.MeshHelper(8, 5, 36);
   const pos = 0.5;
   const neg = -0.5;
 
-  //            X    Y   Z     R    G    B
-  v.addVertex([neg, neg, neg, 0.1, 0.1, 0.1]);
-  v.addVertex([neg, pos, neg, 0.1, 0.9, 0.1]);
-  v.addVertex([pos, pos, neg, 0.9, 0.9, 0.1]);
-  v.addVertex([pos, neg, neg, 0.9, 0.1, 0.1]);
-  v.addVertex([neg, neg, pos, 0.1, 0.1, 0.9]);
-  v.addVertex([neg, pos, pos, 0.1, 0.9, 0.9]);
-  v.addVertex([pos, pos, pos, 0.9, 0.9, 0.9]);
-  v.addVertex([pos, neg, pos, 0.9, 0.1, 0.9]);
+  //            X    Y   Z     tx   ty
+  v.addVertex([neg, neg, neg, 0.3, 0.3]);
+  v.addVertex([neg, pos, neg, 0.3, 0.7]);
+  v.addVertex([pos, pos, neg, 0.7, 0.7]);
+  v.addVertex([pos, neg, neg, 0.7, 0.3]);
+  v.addVertex([neg, neg, pos, 0.3, 0.3]);
+  v.addVertex([neg, pos, pos, 0.3, 0.7]);
+  v.addVertex([pos, pos, pos, 0.7, 0.7]);
+  v.addVertex([pos, neg, pos, 0.7, 0.3]);
   v.addRect(0, 1, 2, 3);
   v.addRect(4, 5, 6, 7);
   v.addRect(0, 4, 7, 3);
@@ -29,7 +29,7 @@ function createRectangle(gl, shader) {
     indices: v.indices,
     attribs: [
       { name: "a_position", size: 3 },
-      { name: "a_color", size: 3 },
+      { name: "a_texture", size: 2 },
     ],
   });
 }
@@ -38,8 +38,8 @@ async function main() {
   const gl = document.querySelector("#canvitas").getContext("webgl2");
   if (!gl) return undefined !== console.log("WebGL 2 not supported");
 
-  const vertSrc = await fetch("glsl/04-02.vert").then((resp) => resp.text());
-  const fragSrc = await fetch("glsl/03-01.frag").then((resp) => resp.text());
+  const vertSrc = await fetch("glsl/05-01.vert").then((resp) => resp.text());
+  const fragSrc = await fetch("glsl/05-01.frag").then((resp) => resp.text());
   const shader = wu.createProgramFromSources(gl, [vertSrc, fragSrc]);
 
   const cam = new cg.Cam([0, 0, 4]);
@@ -50,6 +50,34 @@ async function main() {
   const modelLoc = gl.getUniformLocation(shader, "u_model");
   const viewLoc = gl.getUniformLocation(shader, "u_view");
   const projectionLoc = gl.getUniformLocation(shader, "u_projection");
+
+  const texLoc = gl.getUniformLocation(shader, "u_texData");
+
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGB,
+    1,
+    1,
+    0,
+    gl.RGB,
+    gl.UNSIGNED_BYTE,
+    new Uint8Array([255, 0, 0, 255]),
+  );
+
+  const image = new Image();
+  image.src = "textures/mario.jpg";
+  image.addEventListener("load", () => {
+		gl.useProgram(shader);
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+		gl.generateMipmap(gl.TEXTURE_2D);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.uniform1i(texLoc, 0);
+  });
 
   let aspect = 1;
 
