@@ -4,25 +4,34 @@ const wu = webglUtils;
 const mat4 = glMatrix.mat4;
 
 function createRectangle(gl, shader) {
-  const v = new cg.MeshHelper(8, 5, 36);
+  const v = new cg.MeshHelper(16, 5, 36);
   const pos = 0.5;
   const neg = -0.5;
 
   //            X    Y   Z     tx   ty
-  v.addVertex([neg, neg, neg, 0.3, 0.3]);
-  v.addVertex([neg, pos, neg, 0.3, 0.7]);
-  v.addVertex([pos, pos, neg, 0.7, 0.7]);
-  v.addVertex([pos, neg, neg, 0.7, 0.3]);
-  v.addVertex([neg, neg, pos, 0.3, 0.3]);
-  v.addVertex([neg, pos, pos, 0.3, 0.7]);
-  v.addVertex([pos, pos, pos, 0.7, 0.7]);
-  v.addVertex([pos, neg, pos, 0.7, 0.3]);
+  v.addVertex([neg, neg, neg, 0, 0]);
+  v.addVertex([neg, pos, neg, 0, 1]);
+  v.addVertex([pos, pos, neg, 1, 1]);
+  v.addVertex([pos, neg, neg, 1, 0]);
+  v.addVertex([neg, neg, pos, 0, 1]);
+  v.addVertex([neg, pos, pos, 0, 0]);
+  v.addVertex([pos, pos, pos, 1, 0]);
+  v.addVertex([pos, neg, pos, 1, 1]);
+
+  v.addVertex([neg, neg, neg, 1, 0]);
+  v.addVertex([neg, pos, neg, 0, 0]);
+  v.addVertex([pos, pos, neg, 0, 1]);
+  v.addVertex([pos, neg, neg, 1, 1]);
+  v.addVertex([neg, neg, pos, 1, 1]);
+  v.addVertex([neg, pos, pos, 0, 1]);
+  v.addVertex([pos, pos, pos, 0, 0]);
+  v.addVertex([pos, neg, pos, 1, 0]);
   v.addRect(0, 1, 2, 3);
   v.addRect(4, 5, 6, 7);
   v.addRect(0, 4, 7, 3);
   v.addRect(1, 5, 6, 2);
-  v.addRect(2, 3, 7, 6);
-  v.addRect(0, 1, 5, 4);
+  v.addRect(10, 11, 15, 14);
+  v.addRect(8, 9, 13, 12);
 
   return new cg.Mesh(gl, shader, {
     vertices: v.vertices,
