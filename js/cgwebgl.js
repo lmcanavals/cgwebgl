@@ -172,7 +172,7 @@
     }
   }
 
-  function parseObject(text) {
+  function parseObj(text) {
     const objPositions = [[0, 0, 0]];
     const objTexcoords = [[0, 0]];
     const objNormals = [[0, 0, 0]];
@@ -268,7 +268,7 @@
     const keywordRE = /(\w*)(?: )*(.*)/;
     const lines = text.split("\n");
 
-    for (let lineNo = 0; lineNo < line.length; ++lineNo) {
+    for (let lineNo = 0; lineNo < lines.length; ++lineNo) {
       const line = lines[lineNo].trim();
       if (line === "" || line[0] === "#") continue;
       const m = keywordRE.exec(line);
@@ -309,9 +309,7 @@
         material = {};
         materials[unparsedArgs] = material;
       },
-      Ns(parts) {
-        material.shininess = parseFloat(parts[0]);
-      },
+      Ns: (parts) => material.shininess = parseFloat(parts[0]),
       Ka(parts) {
         material.ambient = parts.map(parseFloat);
       },

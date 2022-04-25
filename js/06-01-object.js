@@ -1,84 +1,24 @@
 "use strict";
 
-const { vec3, mat4 } = glMatrix;
+import * as cg from "./cg.js";
+import * as v3 from "./glmjs/vec3.js";
+import * as v4 from "./glmjs/vec4.js";
+import * as m4 from "./glmjs/mat4.js";
+import * as twgl from "./twgl-full.module.js";
 
 async function main() {
   const gl = document.querySelector("#canvitas").getContext("webgl2");
   if (!gl) return undefined !== console.log("WebGL 2.0 not supported");
 
-  const vertfn = "glsl/06-01.vert";
-  const fragfn = "glsl/06-01.frag";
-  const objfn = "models/cubito/cubito.obj";
+  twgl.setDefaults({ attribPrefix: "a_" });
 
-  twgl.setAttributePrefix("a_");
-
-  const vertSrc = await fetch(vertfn).then((r) => r.text());
-  const fragSrc = await fetch(fragfn).then((r) => r.text());
-  const objSrc = await fetch(objfn).then((r) => r.text());
-
+  const vertSrc = await fetch("glsl/06-01.vert").then((r) => r.text());
+  const fragSrc = await fetch("glsl/06-01.frag").then((r) => r.text());
   const meshProgramInfo = twgl.createProgramInfo(gl, [vertSrc, fragSrc]);
-  const cubex = cg.parseObj(objSrc);
-
-  const baseHref = new URL(objfn, window.location.href);
-  const matSrc = await Promise.all(cubex.materialLibs.map(async (filename) => {
-    const matHref = new URL(filename, baseHref).href;
-    const response = await fetch(matHref);
-    return await response.text();
-  }));
-  const materials = cubex.parseMtl(matSrc.join("\n"));
-  const parts = cubex.geometries.map(({ material, data }) => {
-    if (data.color) {
-      if (data.position.length === data.color.length) {
-        data.color = { numComponents: 3, data: data.color };
-      }
-    } else {
-      data.color = { value: [1, 1, 1, 1] };
-    }
-    const bufferInfo = twgl.createBufferInfoFromArrays(gl, data);
-    const vao = twgl.createVAOFromBufferInfo(gl, meshProgramInfo, bufferInfo);
-    return {
-      material: materials[material],
-      bufferInfo,
-      vao,
-    };
-  });
-
-  function getExtents(positions) {
-    const min = positions.slice(0, 3);
-    const max = positions.slice(0, 3);
-    for (let i = 3; i < positions.length; i += 3) {
-      for (let j = 0; j < 3; j++) {
-        const v = positions[i + j];
-        min[j] = Math.min(min[j], v);
-        max[j] = Math.max(max[j], v);
-      }
-    }
-    return { min, max };
-  }
-
-  function getGeometriesExtents(geometries) {
-    return geometries.reduce(({ min, max }, { data }) => {
-      const minMax = getExtents(data.position);
-      return {
-        min: min.map((min, ndx) => Math.min(min, minMax.min[ndx])),
-        ax: max.map((max, ndx) => Math.max(max, minMax.max[ndx])),
-      };
-    }, {
-      min: Array(3).fill(Number.POSITIVE_INFINITY),
-      max: Array(3).fill(Number.NEGATIVE_INFINITY),
-    });
-  }
-
-  const extents = getGeometriesExtents(obj.geometries);
-  const range = vec3.create();
-  const temp = vec3.create();
-  vec3.substract(range, extents.max, extents.min);
-
-  const objOffset = vec3.create();
-  vec3.scale(
-    objOffset,
-    vec3.add(temp, extents.min, vec3.scale(temp, range, 0.5)),
-    -1,
+  const cubex = await cg.loadObj(
+    "models/cubito/cubito.obj",
+    gl,
+    meshProgramInfo,
   );
 
   const cam = new cg.Cam([0, 1.5, 6]);
@@ -90,8 +30,8 @@ async function main() {
   let theta = 0;
 
   const uniforms = {
-    u_world: mat4.create(),
-    u_projection: mat4.create(),
+    u_world: m4.create(),
+    u_projection: m4.create(),
     u_view: cam.viewM4,
   };
 
@@ -104,7 +44,7 @@ async function main() {
     lastTime = elapsedTime;
 
     if (twgl.resizeCanvasToDisplaySize(gl.canvas)) {
-      gl.viewPort(0, 0, gl.canvas.width, gl.canvas.height);
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
       aspect = gl.canvas.width / gl.canvas.height;
     }
     gl.clearColor(0.1, 0.1, 0.1, 1);
@@ -112,21 +52,17 @@ async function main() {
 
     theta = elapsedTime;
 
-    mat4.identity(uniforms.u_projection);
-    mat4.perspective(uniforms.u_projection, cam.zoom, aspect, 0.1, 100);
-    mat4.identity(uniforms.u_world);
-    mat4.rotate(uniforms.u_world, uniforms.u_world, theta, rotationAxis);
+    m4.identity(uniforms.u_projection);
+    m4.perspective(uniforms.u_projection, cam.zoom, aspect, 0.1, 100);
+    m4.identity(uniforms.u_world);
+    m4.rotate(uniforms.u_world, uniforms.u_world, theta, rotationAxis);
 
     gl.useProgram(meshProgramInfo.program);
     twgl.setUniforms(meshProgramInfo, uniforms);
 
-    for (const { bufferInfo, vao, material } of parts) {
+    for (const { bufferInfo, vao, material } of cubex) {
       gl.bindVertexArray(vao);
-      twgl.setUniforms(
-        meshProgramInfo,
-        { u_world: uniforms.u_world },
-        material,
-      );
+      twgl.setUniforms(meshProgramInfo, {}, material);
       twgl.drawBufferInfo(gl, bufferInfo);
     }
 
@@ -147,4 +83,3 @@ async function main() {
 }
 
 main();
-
