@@ -18,14 +18,14 @@ function createRectangle(gl, shader) {
   v.addVertex([pos, pos, pos, 1, 0]);
   v.addVertex([pos, neg, pos, 1, 1]);
 
-  v.addVertex([neg, neg, neg, 1, 0]);
-  v.addVertex([neg, pos, neg, 0, 0]);
-  v.addVertex([pos, pos, neg, 0, 1]);
-  v.addVertex([pos, neg, neg, 1, 1]);
-  v.addVertex([neg, neg, pos, 1, 1]);
-  v.addVertex([neg, pos, pos, 0, 1]);
-  v.addVertex([pos, pos, pos, 0, 0]);
-  v.addVertex([pos, neg, pos, 1, 0]);
+  v.addVertex([neg, neg, neg, 1, 1]);
+  v.addVertex([neg, pos, neg, 1, 0]);
+  v.addVertex([pos, pos, neg, 0, 0]);
+  v.addVertex([pos, neg, neg, 0, 1]);
+  v.addVertex([neg, neg, pos, 0, 1]);
+  v.addVertex([neg, pos, pos, 0, 0]);
+  v.addVertex([pos, pos, pos, 1, 0]);
+  v.addVertex([pos, neg, pos, 1, 1]);
   v.addRect(0, 1, 2, 3);
   v.addRect(4, 5, 6, 7);
   v.addRect(0, 4, 7, 3);
