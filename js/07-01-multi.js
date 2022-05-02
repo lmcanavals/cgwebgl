@@ -35,12 +35,11 @@ async function main() {
   for (let i = 0; i < numObjs; i++) {
     positions[i] = [
       rndb(-13.0, 13.0),
-      0.0, /*rndb(6.0, 12.0)*/
+      rndb(6.0, 12.0),
       rndb(-13.0, 13.0),
     ];
     delta[i] = [rndb(-1.1, 1.1), 0.0, rndb(-1.1, 1.1)];
   }
-  console.log(delta);
 
   const uniforms = {
     u_world: m4.create(),
@@ -83,17 +82,17 @@ async function main() {
       }
 
       // Update position
-			for (let j = 0; j < 3; j++) {
-				positions[i][j] += delta[i][j] * deltaTime;
-				if (positions[i][j] > 13.0) {
-					positions[i][j] = 13.0;
-					delta[i][j] = -delta[i][j];
-				} else if (positions[i][j] < -13.0) {
-					positions[i][j] = -13.0;
-					delta[i][j] = -delta[i][j];
-				}
-			}
-			delta[i][1] += deltaG * deltaTime;
+      for (let j = 0; j < 3; j++) {
+        positions[i][j] += delta[i][j] * deltaTime;
+        if (positions[i][j] > 13.0) {
+          positions[i][j] = 13.0;
+          delta[i][j] = -delta[i][j];
+        } else if (positions[i][j] < -13.0) {
+          positions[i][j] = -13.0;
+          delta[i][j] = -delta[i][j];
+        }
+      }
+      delta[i][1] += deltaG * deltaTime;
     }
 
     requestAnimationFrame(render);
