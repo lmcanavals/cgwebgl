@@ -17,6 +17,6 @@ void main() {
 		gl_Position = u_projection * u_view * u_world * a_position;
 		v_texcoord = a_texcoord;
 		v_normal = mat3(u_world) * a_normal;
-		v_position = a_position.xyz;
+		v_position = (u_world * a_position).xyz;
 }
 

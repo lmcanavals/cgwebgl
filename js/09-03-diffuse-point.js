@@ -28,7 +28,7 @@ async function main() {
     lsProgramInfo,
   );
 
-  const cam = new cg.Cam([0, -5, 25], 25);
+  const cam = new cg.Cam([0, 0, 25], 25);
   const rotationAxis = new Float32Array([0, 1, 0]);
 
   let aspect = 1;
@@ -39,7 +39,7 @@ async function main() {
   const numObjs = 10;
   const positions = new Array(numObjs);
   const delta = new Array(numObjs);
-  const deltaG = 0.0; //-9.81;
+  const deltaG = -9.81;
   const rndb = (a, b) => Math.random() * (b - a) + a;
   for (let i = 0; i < numObjs; i++) {
     positions[i] = [
@@ -61,7 +61,7 @@ async function main() {
     u_lightPosition: new Float32Array([0.0, 0.0, 0.0]),
   };
   const lightRotAxis = new Float32Array([0.0, 0.0, 0.0]);
-  const lightRotSource = new Float32Array([1.0, 0.5, 1.0]);
+  const lightRotSource = new Float32Array([5.0, 0.5, 5.0]);
 
   const lsScale = new Float32Array([0.1, 0.1, 0.1]);
 
@@ -84,6 +84,23 @@ async function main() {
 
     m4.identity(uniforms.u_projection);
     m4.perspective(uniforms.u_projection, cam.zoom, aspect, 0.1, 100);
+
+    gl.useProgram(lsProgramInfo.program);
+    m4.identity(uniforms.u_world);
+    m4.translate(
+      uniforms.u_world,
+      uniforms.u_world,
+      fragUniforms.u_lightPosition,
+    );
+    m4.scale(uniforms.u_world, uniforms.u_world, lsScale);
+    twgl.setUniforms(lsProgramInfo, uniforms);
+    twgl.setUniforms(lsProgramInfo, fragUniforms);
+
+    for (const { bufferInfo, vao, material } of lightSource) {
+      gl.bindVertexArray(vao);
+      twgl.setUniforms(lsProgramInfo, {}, material);
+      twgl.drawBufferInfo(gl, bufferInfo);
+    }
 
     gl.useProgram(meshProgramInfo.program);
 
@@ -119,21 +136,6 @@ async function main() {
         }
       }
       delta[i][1] += deltaG * deltaTime;
-    }
-    m4.identity(uniforms.u_world);
-    m4.translate(
-      uniforms.u_world,
-      uniforms.u_world,
-      fragUniforms.u_lightPosition,
-    );
-    m4.scale(uniforms.u_world, uniforms.u_world, lsScale);
-    twgl.setUniforms(lsProgramInfo, uniforms);
-    twgl.setUniforms(lsProgramInfo, fragUniforms);
-
-    for (const { bufferInfo, vao, material } of lightSource) {
-      gl.bindVertexArray(vao);
-      twgl.setUniforms(lsProgramInfo, {}, material);
-      twgl.drawBufferInfo(gl, bufferInfo);
     }
 
     requestAnimationFrame(render);
