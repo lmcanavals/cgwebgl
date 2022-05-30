@@ -11,11 +11,11 @@ async function main() {
 
   twgl.setDefaults({ attribPrefix: "a_" });
 
-  const vertSrc = await fetch("glsl/10-01.vert").then((r) => r.text());
-  const fragSrc = await fetch("glsl/10-01.frag").then((r) => r.text());
+  const vertSrc = await fetch("glsl/11-01.vert").then((r) => r.text());
+  const fragSrc = await fetch("glsl/11-01.frag").then((r) => r.text());
   const meshProgramInfo = twgl.createProgramInfo(gl, [vertSrc, fragSrc]);
   const cubex = await cg.loadObj(
-    "models/cubito/cubito.obj",
+    "models/crate/crate.obj",
     gl,
     meshProgramInfo,
   );
@@ -29,16 +29,17 @@ async function main() {
   );
 
   const cam = new cg.Cam([0, 0, 25], 5);
-  const rotationAxis = new Float32Array([0, 1, 0]);
+  const rotationAxis = new Float32Array([1, 0.5, 0]);
 
   let aspect = 1;
   let deltaTime = 0;
   let lastTime = 0;
   let theta = 0;
 
-  const numObjs = 10;
+  const numObjs = 1; //10;
   const positions = new Array(numObjs);
-  const delta = new Array(numObjs);
+  positions[0] = [0.0, 0.0, 0.0];
+  /*const delta = new Array(numObjs);
   const deltaG = -9.81;
   const rndb = (a, b) => Math.random() * (b - a) + a;
   for (let i = 0; i < numObjs; i++) {
@@ -48,18 +49,21 @@ async function main() {
       rndb(-13.0, 13.0),
     ];
     delta[i] = [rndb(-1.1, 1.1), 0.0, rndb(-1.1, 1.1)];
-  }
+  }*/
 
-  const uniforms = {
+  const globalUniforms = {
     u_world: m4.create(),
     u_projection: m4.create(),
     u_view: cam.viewM4,
   };
 
-  const fragUniforms = {
-    u_lightColor: new Float32Array([1.0, 1.0, 1.0]),
+  const crateLightUniforms = {
+    u_ambientLight: new Float32Array([1.0, 1.0, 1.0]),
     u_lightPosition: new Float32Array([0.0, 0.0, 0.0]),
     u_viewPosition: cam.pos,
+  };
+  const lsUniforms = {
+    u_lightColor: v3.fromValues(1, 1, 1),
   };
   const lightRotAxis = new Float32Array([0.0, 0.0, 0.0]);
   const lightRotSource = new Float32Array([5.0, 0.5, 5.0]);
@@ -81,21 +85,21 @@ async function main() {
     gl.clearColor(0.1, 0.1, 0.1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    theta = elapsedTime;
+    theta = elapsedTime * Math.PI * 2 / 16;
 
-    m4.identity(uniforms.u_projection);
-    m4.perspective(uniforms.u_projection, cam.zoom, aspect, 0.1, 100);
+    m4.identity(globalUniforms.u_projection);
+    m4.perspective(globalUniforms.u_projection, cam.zoom, aspect, 0.1, 100);
 
     gl.useProgram(lsProgramInfo.program);
-    m4.identity(uniforms.u_world);
+    m4.identity(globalUniforms.u_world);
     m4.translate(
-      uniforms.u_world,
-      uniforms.u_world,
-      fragUniforms.u_lightPosition,
+      globalUniforms.u_world,
+      globalUniforms.u_world,
+      crateLightUniforms.u_lightPosition,
     );
-    m4.scale(uniforms.u_world, uniforms.u_world, lsScale);
-    twgl.setUniforms(lsProgramInfo, uniforms);
-    twgl.setUniforms(lsProgramInfo, fragUniforms);
+    m4.scale(globalUniforms.u_world, globalUniforms.u_world, lsScale);
+    twgl.setUniforms(lsProgramInfo, globalUniforms);
+    twgl.setUniforms(lsProgramInfo, lsUniforms);
 
     for (const { bufferInfo, vao, material } of lightSource) {
       gl.bindVertexArray(vao);
@@ -106,19 +110,28 @@ async function main() {
     gl.useProgram(meshProgramInfo.program);
 
     v3.rotateY(
-      fragUniforms.u_lightPosition,
+      crateLightUniforms.u_lightPosition,
       lightRotSource,
       lightRotAxis,
-      theta,
+      -theta,
     );
 
     for (let i = 0; i < numObjs; i++) {
-      m4.identity(uniforms.u_world);
-      m4.translate(uniforms.u_world, uniforms.u_world, positions[i]);
-      m4.rotate(uniforms.u_world, uniforms.u_world, theta, rotationAxis);
-      twgl.setUniforms(meshProgramInfo, uniforms);
+      m4.identity(globalUniforms.u_world);
+      m4.translate(
+        globalUniforms.u_world,
+        globalUniforms.u_world,
+        positions[i],
+      );
+      m4.rotate(
+        globalUniforms.u_world,
+        globalUniforms.u_world,
+        theta,
+        rotationAxis,
+      );
+      twgl.setUniforms(meshProgramInfo, globalUniforms);
 
-      twgl.setUniforms(meshProgramInfo, fragUniforms);
+      twgl.setUniforms(meshProgramInfo, crateLightUniforms);
 
       for (const { bufferInfo, vao, material } of cubex) {
         gl.bindVertexArray(vao);
@@ -126,7 +139,7 @@ async function main() {
         twgl.drawBufferInfo(gl, bufferInfo);
       }
       // Update position
-      for (let j = 0; j < 3; j++) {
+      /*for (let j = 0; j < 3; j++) {
         positions[i][j] += delta[i][j] * deltaTime;
         if (positions[i][j] > 13.0) {
           positions[i][j] = 13.0;
@@ -137,7 +150,7 @@ async function main() {
           delta[i][j] = -delta[i][j];
         }
       }
-      delta[i][1] += deltaG * deltaTime;
+      delta[i][1] += deltaG * deltaTime;*/
     }
 
     requestAnimationFrame(render);
